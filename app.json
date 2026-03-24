@@ -1,14 +1,13 @@
 {
   "expo": {
     "name": "travel-mate-2026",
-    "slug": "snack-d38ef554-ad18-4a8a-a24b-e64ae54a084f",
+    "slug": "snack-6bc57a2c-637b-4540-8508-91422a4d0cdc",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -19,8 +18,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

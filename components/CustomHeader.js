@@ -43,7 +43,7 @@ const CustomHeader = ({ onPressLogo, unreadCount = 3 }) => {
 
       {/* 2. 우측: 알림 아이콘 & 더보기 아이콘 */}
       <View style={styles.rightIconsContainer}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('알림 목록 열기')}>
+        <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Notifications')}>
           <Ionicons name="notifications-outline" size={26} color="black" />
           {unreadCount > 0 && (
             <View style={styles.badgeContainer}>

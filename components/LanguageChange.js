@@ -3,117 +3,90 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '../components/LanguageContext';
 
+// 💡 언어 목록을 배열로 관리하면 렌더링과 관리가 훨씬 쉬워집니다.
+const LANGUAGE_LIST = [
+  { code: 'ko', name: '한국어' },
+  { code: 'en', name: 'English' },
+  { code: 'ja', name: '日本語' },
+  { code: 'zh', name: '中文' },
+  { code: 'vi', name: 'Tiếng Việt' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'km', name: 'ភាសាខ្មែរ' },
+  { code: 'si', name: 'සිංහල' },
+];
+
 const LanguageChange = ({ onLanguageSelected }) => {
   const { setLocale, locale } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState(locale);
 
   useEffect(() => {
-    // 컴포넌트가 마운트될 때 저장된 언어를 가져와 설정
     const loadLanguage = async () => {
       try {
         const storedLanguage = await AsyncStorage.getItem('language');
         if (storedLanguage) {
           setSelectedLanguage(storedLanguage);
-          setLocale(storedLanguage); // storedLanguage가 존재할 때 locale도 업데이트
+          setLocale(storedLanguage);
         }
       } catch (error) {
         console.error('Error loading language:', error);
       }
     };
-
     loadLanguage();
   }, [setLocale]);
 
-  const changeLanguage = async (language) => {
-    console.log(`Changing language to ${getLanguageName(language)}.`);
-    setLocale(language);
-    setSelectedLanguage(language);
-    await storeLanguage(language);
-    onLanguageSelected(); // 언어 변경 후 onLanguageSelected 함수를 호출하여 홈 화면으로 이동합니다.
-  };
-
-  const getLanguageName = (language) => {
-    switch (language) {
-      case 'en': return 'English';
-      case 'ko': return '한국어';
-      case 'ja': return '日本語';
-      case 'zh': return '中文';
-      case 'si': return 'සිංහල'; // 싱할라어
-      case 'km': return 'ភាសាខ្មែរ'; // 크메르어
-      case 'vi': return 'Tiếng Việt'; // 베트남어
-      case 'ru': return 'Русский'; // 러시아어
-      default: return 'Unknown';
-    }
-  };
-
-  const storeLanguage = async (language) => {
+  const changeLanguage = async (languageCode, languageName) => {
+    console.log(`Changing language to ${languageName}.`);
+    setLocale(languageCode);
+    setSelectedLanguage(languageCode);
+    
     try {
-      await AsyncStorage.setItem('language', language);
+      await AsyncStorage.setItem('language', languageCode);
     } catch (error) {
       console.error('Error storing language:', error);
+    }
+
+    // 언어 변경 후 모달 닫기 또는 홈 화면 이동
+    if (onLanguageSelected) {
+      onLanguageSelected(); 
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>언어를 선택해주세요.</Text>
-      <Text style={styles.headerText}>Please choose your language.</Text>
-      <ScrollView contentContainerStyle={styles.languageContainer}>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'en' && styles.selectedButton]}
-            onPress={() => changeLanguage('en')}
-          >
-            <Text style={styles.buttonText}>English</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'ko' && styles.selectedButton]}
-            onPress={() => changeLanguage('ko')}
-          >
-            <Text style={styles.buttonText}>한국어</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'ja' && styles.selectedButton]}
-            onPress={() => changeLanguage('ja')}
-          >
-            <Text style={styles.buttonText}>日本語</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'zh' && styles.selectedButton]}
-            onPress={() => changeLanguage('zh')}
-          >
-            <Text style={styles.buttonText}>中文</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'si' && styles.selectedButton]}
-            onPress={() => changeLanguage('si')}
-          >
-            <Text style={styles.buttonText}>සිංහල</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'km' && styles.selectedButton]}
-            onPress={() => changeLanguage('km')}
-          >
-            <Text style={styles.buttonText}>ភាសាខ្មែរ</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'vi' && styles.selectedButton]}
-            onPress={() => changeLanguage('vi')}
-          >
-            <Text style={styles.buttonText}>Tiếng Việt</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, selectedLanguage === 'ru' && styles.selectedButton]}
-            onPress={() => changeLanguage('ru')}
-          >
-            <Text style={styles.buttonText}>Русский</Text>
-          </TouchableOpacity>
+      {/* 헤더 타이틀 영역 */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.title}>언어를 선택해주세요</Text>
+        <Text style={styles.subtitle}>Please choose your language</Text>
+      </View>
+
+      {/* 언어 선택 리스트 */}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.gridContainer}>
+          {LANGUAGE_LIST.map((lang) => {
+            const isSelected = selectedLanguage === lang.code;
+
+            return (
+              <TouchableOpacity
+                key={lang.code}
+                style={[
+                  styles.languageCard,
+                  isSelected && styles.selectedCard
+                ]}
+                activeOpacity={0.7}
+                onPress={() => changeLanguage(lang.code, lang.name)}
+              >
+                <Text style={[
+                  styles.cardText,
+                  isSelected && styles.selectedCardText
+                ]}>
+                  {lang.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
     </View>
@@ -123,38 +96,69 @@ const LanguageChange = ({ onLanguageSelected }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF', // 깨끗한 흰색 배경
+    
+    // 🔥 1. 상단 여백을 크게 증가시켜 전체 내용을 아래로 내립니다.
+    // 기존 30 -> 100 정도로 대폭 증가
+    paddingTop: 100, 
+  },
+  headerContainer: {
     alignItems: 'center',
-    padding: 20,
+    
+    // 🔥 2. 제목과 버튼 그리드 사이의 여백도 늘려 답답함을 해소합니다.
+    // 기존 30 -> 60으로 증가
+    marginBottom: 60, 
   },
-  headerText: {
-    fontSize: 20,
-    marginBottom: 10, // 문구 간격 조정
-    textAlign: 'center',
+  title: {
+    fontSize: 24, // 제목 글씨 크기를 조금 더 키워 강조
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 10, // 문구 사이 간격
   },
-  languageContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingHorizontal: 10, // 양쪽 여백 조정
+  subtitle: {
+    fontSize: 17, // 서브타이틀 크기도 살짝 증가
+    color: '#888888',
   },
-  row: {
+  scrollContent: {
+    paddingHorizontal: 25, // 양옆 여백을 조금 더 넓혀 버튼들을 안쪽으로 모음
+    paddingBottom: 40,
+  },
+  gridContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  languageCard: {
+    width: '48%', // 한 줄에 2개씩 배치
+    backgroundColor: '#F8F9FA', // 기본 연한 회색 배경
+    paddingVertical: 20, // 위아래 패딩을 늘려 버튼을 더 큼직하게
+    borderRadius: 15, // 더 둥근 모서리
+    marginBottom: 18, // 버튼 간 간격
+    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10, // 각 행 간격 조정
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    
+    // 그림자 (iOS)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04, // 아주 미세한 그림자로 고급스럽게
+    shadowRadius: 4,
+    // 그림자 (Android)
+    elevation: 3, // 약간 더 띄운 느낌
   },
-  button: {
-    backgroundColor: '#cccccc', // 기본 버튼 색상 회색
-    paddingHorizontal: 15, // 가로 여백 조정
-    paddingVertical: 10,
-    marginHorizontal: 5, // 버튼 간 간격 조정
-    borderRadius: 5,
+  selectedCard: {
+    backgroundColor: '#F0F4FF', // 선택 시 연한 파란색 배경
+    borderColor: '#4285F4', // 테두리 강조 (구글 블루 느낌)
   },
-  selectedButton: {
-    backgroundColor: '#28a745', // 선택된 버튼 색상 초록색
+  cardText: {
+    fontSize: 17, // 글씨 크기 살짝 증가
+    color: '#555555',
+    fontWeight: '500',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
+  selectedCardText: {
+    color: '#4285F4', // 글씨 색상도 블루로 맞춰서 통일감
+    fontWeight: 'bold',
   },
 });
 

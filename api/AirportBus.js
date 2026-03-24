@@ -1,116 +1,118 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Button, TextInput } from 'react-native';
+import { 
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, 
+  Modal, TextInput, ActivityIndicator 
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { useLanguage } from '../components/LanguageContext'; // 언어 설정을 가져옵니다.
-import { Table, Row, Rows } from 'react-native-table-component';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useLanguage } from '../components/LanguageContext';
+import { Table, Row } from 'react-native-table-component';
 
-// 각 버스 정보를 보여주는 컴포넌트
+// --- BusBox 컴포넌트 ---
 function BusBox({ busInfo }) {
   const [showRoute, setShowRoute] = useState(false);
   const [showTimetable, setShowTimetable] = useState(false);
-  const { translate } = useLanguage(); // useLanguage 훅을 통해 translate 함수를 가져옵니다.
+  const { translate } = useLanguage();
 
-  const handleRouteCheck = () => {
-    setShowRoute(true);
-    console.log(`노선 확인: ${busInfo.routeinfo}`);
-  };
-
-  const handleTimetableCheck = () => {
-    setShowTimetable(true);
-    console.log(`시간표 확인: ${busInfo.t1wdayt}`);
-  };
-
-  // 시간을 00:00 형식으로 변환하는 함수
   const formatTime = (time) => {
-    if (!time) return ''; // null 또는 undefined인 경우 빈 문자열 반환
-    const hours = time.substring(0, 2); // 시간 부분 추출
-    const minutes = time.substring(2); // 분 부분 추출
+    if (!time) return '';
+    const hours = time.substring(0, 2);
+    const minutes = time.substring(2);
     return `${hours}:${minutes}`;
   };
 
-  // 노선 정보를 번역하는 함수
   const translateRouteInfo = (routeInfo) => {
-    if (!routeInfo) return []; // routeInfo가 null이거나 값이 없는 경우 빈 배열 반환
-
-    // 모든 구분자를 처리하기 위해 정규 표현식을 사용
+    if (!routeInfo) return [];
     const locations = routeInfo.split(/,\s*|\s+/);
-
-    // locations 배열을 번역하여 반환
     return locations.map(location => translate(location));
   };
 
-  // 시간표 데이터를 테이블 형식으로 변환하는 함수
   const formatTimetableData = (timetable) => {
-    if (!timetable) {
-      return [];
-    }
-
-    // 쉼표 제거
+    if (!timetable) return [];
     const cleanedTimetable = timetable.replace(/,/g, '');
-
-    // 시간표 문자열을 4자리씩 분리
     const times = cleanedTimetable.match(/.{1,5}/g);
-
-    // 분리된 시간들을 형식에 맞게 변환
-    const formattedTimes = times.map(formatTime);
-
-    // 변환된 시간들을 2개씩 묶어서 테이블 데이터로 저장
+    const formattedTimes = times ? times.map(formatTime) : [];
+    
     const tableData = [];
     for (let i = 0; i < formattedTimes.length; i += 2) {
-      tableData.push([formattedTimes[i], formattedTimes[i + 1]]);
+      tableData.push([formattedTimes[i], formattedTimes[i + 1] || '']);
     }
-
-    // 저장된 테이블 데이터를 반환
     return tableData;
   };
 
   return (
     <View style={styles.busBox}>
-      <Text style={styles.busInfoText}>{translate('버스번호')}: {busInfo.busnumber}</Text>
-      <Text style={styles.busInfoText}>{translate('첫차')}: {formatTime(busInfo.toawfirst)}</Text>
-      <Text style={styles.busInfoText}>{translate('막차')}: {formatTime(busInfo.toawlast)}</Text>
-      <TouchableOpacity style={styles.button} onPress={handleRouteCheck}>
-        <Text style={styles.buttonText}>{translate('노선 확인하기')}</Text>
-      </TouchableOpacity>
-      <Modal
-        animationType="slide"
-        transparent={false} // 전체 화면을 위해 transparent를 false로 설정
-        visible={showRoute}
-        onRequestClose={() => setShowRoute(false)}
-      >
-        <View style={styles.fullScreenModal}>
-          <View style={styles.fullScreenModalContent}>
-            <Text style={styles.modalTitle}>{translate('노선')}</Text>
-            <ScrollView style={{ width: '100%' }}>
+      {/* 버스 번호 헤더 */}
+      <View style={styles.busHeader}>
+        <Icon name="bus" size={24} color="#008485" />
+        <Text style={styles.busNumberText}>{busInfo.busnumber}</Text>
+      </View>
+
+      {/* 시간 정보 */}
+      <View style={styles.timeInfoContainer}>
+        <View style={styles.timeBlock}>
+          <Text style={styles.timeLabel}>{translate('첫차')}</Text>
+          <Text style={styles.timeValue}>{formatTime(busInfo.toawfirst)}</Text>
+        </View>
+        <View style={styles.timeDivider} />
+        <View style={styles.timeBlock}>
+          <Text style={styles.timeLabel}>{translate('막차')}</Text>
+          <Text style={styles.timeValue}>{formatTime(busInfo.toawlast)}</Text>
+        </View>
+      </View>
+
+      {/* 액션 버튼 */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => setShowRoute(true)}>
+          <Icon name="map-outline" size={18} color="#555" />
+          <Text style={styles.actionButtonText}>{translate('노선 보기')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton} onPress={() => setShowTimetable(true)}>
+          <Icon name="time-outline" size={18} color="#555" />
+          <Text style={styles.actionButtonText}>{translate('시간표')}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 노선 모달 */}
+      <Modal animationType="slide" transparent={true} visible={showRoute} onRequestClose={() => setShowRoute(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{translate('버스 노선')}</Text>
+              <TouchableOpacity onPress={() => setShowRoute(false)}>
+                <Icon name="close" size={26} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ width: '100%', paddingHorizontal: 20 }}>
               {translateRouteInfo(busInfo.routeinfo).map((item, index) => (
-                <Text key={index} style={styles.modalText}>{item}</Text>
+                <View key={index} style={styles.routeItem}>
+                  <View style={styles.routeDot} />
+                  <Text style={styles.routeText}>{item}</Text>
+                </View>
               ))}
             </ScrollView>
-            <Button title={translate('닫기')} onPress={() => setShowRoute(false)} />
           </View>
         </View>
       </Modal>
-      <TouchableOpacity style={styles.button} onPress={handleTimetableCheck}>
-        <Text style={styles.buttonText}>{translate('시간표 확인하기')}</Text>
-      </TouchableOpacity>
-      <Modal
-        animationType="slide"
-        transparent={false} // 전체 화면을 위해 transparent를 false로 설정
-        visible={showTimetable}
-        onRequestClose={() => setShowTimetable(false)}
-      >
-        <View style={styles.fullScreenModal}>
-          <View style={styles.fullScreenModalContent}>
-            <Text style={styles.modalTitle}>{translate('공항버스 시간표')}</Text>
-            <ScrollView style={{ width: '100%' }}>
-              <Table borderStyle={{ borderWidth: 1 }}>
-                <Row data={[translate('인천공항 출발시간')]} style={styles.head} textStyle={styles.tableText} />
+
+      {/* 시간표 모달 */}
+      <Modal animationType="slide" transparent={true} visible={showTimetable} onRequestClose={() => setShowTimetable(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{translate('시간표')}</Text>
+              <TouchableOpacity onPress={() => setShowTimetable(false)}>
+                <Icon name="close" size={26} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ width: '100%', paddingHorizontal: 20, marginBottom: 20 }}>
+              <Table borderStyle={{ borderWidth: 1, borderColor: '#eee' }}>
+                <Row data={[translate('출발 시간')]} style={styles.tableHead} textStyle={styles.tableHeadText} />
                 {formatTimetableData(busInfo.t1wdayt).map((data, index) => (
-                  <Row key={index} data={data} textStyle={styles.tableText} />
+                  <Row key={index} data={data} textStyle={styles.tableText} style={{ height: 40 }}/>
                 ))}
               </Table>
             </ScrollView>
-            <Button title={translate('닫기')} onPress={() => setShowTimetable(false)} />
           </View>
         </View>
       </Modal>
@@ -118,77 +120,71 @@ function BusBox({ busInfo }) {
   );
 }
 
-// 공항 버스 정보를 표시하는 컴포넌트
+// --- 메인 컴포넌트 ---
 function AirportBusInfo() {
   const [selectedArea, setSelectedArea] = useState('1');
-  const [busInfo, setBusInfo] = useState(null);
-  const [searchText, setSearchText] = useState(''); // 검색어 상태 추가
-  const [selectedFavoriteRoute, setSelectedFavoriteRoute] = useState(null); // 선택된 노선 상태 추가
-  const { translate } = useLanguage(); // useLanguage 훅을 통해 translate 함수를 가져옵니다.
+  const [busInfo, setBusInfo] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedFavoriteRoute, setSelectedFavoriteRoute] = useState(null);
+  const { translate } = useLanguage();
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const serviceKey = 'bNxy7RPcmy860NJ4E%2B4OWEOJ%2FniUvrEhHvBHdh5RwPNs4Rh%2BFdTCSmtMZUMKFQl%2BoS5BEtC18cgjgFvXw%2FUz%2BQ%3D%3D';
-      const numOfRows = '100';
-      const pageNo = '1';
-      const area = selectedArea;
-      const type = 'json';
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const serviceKey = 'bNxy7RPcmy860NJ4E%2B4OWEOJ%2FniUvrEhHvBHdh5RwPNs4Rh%2BFdTCSmtMZUMKFQl%2BoS5BEtC18cgjgFvXw%2FUz%2BQ%3D%3D';
+        const url = `http://apis.data.go.kr/B551177/BusInformation/getBusInfo?serviceKey=${serviceKey}&numOfRows=100&pageNo=1&area=${selectedArea}&type=json`;
 
-      // API 요청 URL 생성
-      const url = `http://apis.data.go.kr/B551177/BusInformation/getBusInfo?serviceKey=${serviceKey}&numOfRows=${numOfRows}&pageNo=${pageNo}&area=${area}&type=${type}`;
+        const response = await fetch(url);
+        const jsonData = await response.json();
 
-      // API 호출
-      const response = await fetch(url);
-      const jsonData = await response.json();
+        if (jsonData?.response?.body?.items) {
+          const translatedBusInfo = jsonData.response.body.items.map(item => ({
+            ...item,
+            routeinfo_en: item.routeinfo ? item.routeinfo.split(', ').map(location => translate(location, 'en')).join(', ') : ''
+          }));
+          setBusInfo(translatedBusInfo);
+        } else {
+          setBusInfo([]);
+        }
+      } catch (error) {
+        console.error('데이터 에러:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [selectedArea, translate]);
 
-      // 응답 데이터를 한글과 영어로 번역하여 설정
-      const translatedBusInfo = jsonData.response.body.items.map(item => ({
-        ...item,
-        routeinfo_en: item.routeinfo ? item.routeinfo.split(', ').map(location => translate(location, 'en')).join(', ') : ''
-      }));
+  const filteredBusInfo = busInfo.filter(item => {
+    return (item.busnumber && item.busnumber.includes(searchText)) ||
+           (item.routeinfo && item.routeinfo.includes(searchText)) ||
+           (item.routeinfo_en && item.routeinfo_en.toLowerCase().includes(searchText.toLowerCase()));
+  });
 
-      // 번역된 데이터를 상태에 설정
-      setBusInfo(translatedBusInfo);
-    } catch (error) {
-      console.error('데이터를 불러오는 중 에러 발생:', error);
+  const favoriteRoutes = [translate('강남역'), translate('압구정'), translate('홍대'), translate('서울역'), translate('종로')];
+
+  const handleFavoriteRouteClick = (route) => {
+    if (selectedFavoriteRoute === route) {
+      setSearchText('');
+      setSelectedFavoriteRoute(null);
+    } else {
+      setSearchText(route);
+      setSelectedFavoriteRoute(route);
     }
   };
 
-  fetchData();
-}, [selectedArea, translate]); // translate 추가
-
-  // 검색어를 이용하여 버스 정보 필터링
-  const filteredBusInfo = busInfo ?
-    busInfo.filter(item => {
-      return (item.busnumber && item.busnumber.includes(searchText)) ||
-        (item.routeinfo && item.routeinfo.includes(searchText)) ||
-        (item.routeinfo_en && item.routeinfo_en.includes(searchText));
-    }) : [];
-
-  // 자주가는 버스 노선 리스트
-  const favoriteRoutes = [
-    translate('강남역'),
-    translate('압구정'),
-    translate('홍대'),
-    translate('서울역'),
-    translate('종로')
-  ]; // 예시로 3개의 자주가는 버스 노선을 설정
-
-  // 즐겨찾기 노선 버튼 클릭 핸들러
-  const handleFavoriteRouteClick = (route) => {
-    setSearchText(route);
-    setSelectedFavoriteRoute(route); // 선택된 노선 업데이트
-  };
-
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View style={{ padding: 20 }}>
-        {/* 지역 선택 피커 */}
-        <View style={styles.pickercontainer}>
+    <View style={styles.mainContainer}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+        
+        {/* 지역 선택 */}
+        <View style={styles.pickerContainer}>
           <Picker
             selectedValue={selectedArea}
-            onValueChange={(itemValue, itemIndex) => setSelectedArea(itemValue)}
+            onValueChange={(itemValue) => setSelectedArea(itemValue)}
+            style={{ height: 50 }}
           >
             <Picker.Item label={translate('서울')} value="1" />
             <Picker.Item label={translate('경기도')} value="2" />
@@ -201,171 +197,130 @@ useEffect(() => {
         </View>
 
         {/* 검색 바 */}
-        <TextInput
-          style={styles.searchInput}
-          placeholder={translate('버스번호 또는 노선을 검색하세요')}
-          onChangeText={text => setSearchText(text)}
-          value={searchText}
-        />
-        {/* 자주가는 노선 버튼 */}
-        <View>
-          <Text style={styles.text1}>{translate('자주가는 도착지')}</Text>
-          <View style={styles.favoriteRoutesContainer}>
-            {favoriteRoutes.map((route, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.favoriteRouteButton,
-                  selectedFavoriteRoute === route && styles.selectedFavoriteRouteButton
-                ]}
-                onPress={() => handleFavoriteRouteClick(route)}
-              >
-                <Text
-                  style={[
-                    styles.favoriteRouteButtonText,
-                    selectedFavoriteRoute === route && styles.selectedFavoriteRouteButtonText
-                  ]}
-                >
-                  {route}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <View style={styles.searchWrapper}>
+          <Icon name="search-outline" size={20} color="#888" style={{marginLeft: 10}}/>
+          <TextInput
+            style={styles.searchInput}
+            placeholder={translate('버스번호 또는 목적지 검색')}
+            onChangeText={text => setSearchText(text)}
+            value={searchText}
+            clearButtonMode="while-editing"
+          />
         </View>
-        {/* 버스 정보 표시 */}
-        {filteredBusInfo.length > 0 ? (
-          <View>
-            <Text style={styles.resultText}>{translate('인천공항에서 출발하는 버스 정보를 확인하세요')}</Text>
-            {filteredBusInfo.map((item, index) => (
-              <BusBox key={index} busInfo={item} />
-            ))}
+
+        {/* 칩(Chip) 스타일의 자주 가는 노선 */}
+        <Text style={styles.sectionTitle}>{translate('자주 찾는 목적지')}</Text>
+        <View style={styles.chipContainer}>
+          {favoriteRoutes.map((route, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.chip, selectedFavoriteRoute === route && styles.chipSelected]}
+              onPress={() => handleFavoriteRouteClick(route)}
+            >
+              <Text style={[styles.chipText, selectedFavoriteRoute === route && styles.chipTextSelected]}>
+                {route}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* 결과 리스트 */}
+        <Text style={styles.resultTitle}>{translate('출발 예정 버스')}</Text>
+        
+        {loading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color="#008485" />
+            <Text style={styles.loadingText}>{translate('버스 정보를 불러오는 중입니다...')}</Text>
           </View>
+        ) : filteredBusInfo.length > 0 ? (
+          filteredBusInfo.map((item, index) => (
+            <BusBox key={index} busInfo={item} />
+          ))
         ) : (
-          <Text style={styles.resultText}>{translate('노선정보를 불러오고 있습니다')}</Text>
+          <View style={styles.loadingBox}>
+            <Text style={{color: '#888'}}>{translate('해당 노선 정보가 없습니다.')}</Text>
+          </View>
         )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainContainer: { flex: 1, backgroundColor: '#F8F9FA' }, // 전체 배경 통일
+  pickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    marginBottom: 15,
+    justifyContent: 'center',
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#333', // 이전 검색창 스타일과 통일
+    height: 50,
+    marginBottom: 20,
+  },
+  searchInput: { flex: 1, paddingHorizontal: 10, fontSize: 16 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#333', marginBottom: 10 },
+  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 25 },
+  chip: {
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20, // 둥근 알약 형태
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  chipSelected: { backgroundColor: '#EDF5F5', borderColor: '#008485' },
+  chipText: { fontSize: 14, color: '#555' },
+  chipTextSelected: { color: '#008485', fontWeight: 'bold' },
+  resultTitle: { fontSize: 18, fontWeight: '800', color: '#1A1A1A', marginBottom: 15 },
+  
+  // BusBox 디자인 개선
   busBox: {
     backgroundColor: '#fff',
-    padding: 15,
-    marginVertical: 10,
-    borderRadius: 15,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 1, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  busInfoText: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  button: {
-    backgroundColor: '#09AA5C',
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 5,
-  },
-  buttonText: {
-    textAlign: 'center',
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  fullScreenModal: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-  },
-  fullScreenModalContent: {
-    backgroundColor: '#fff',
     padding: 20,
-    borderRadius: 10,
-    elevation: 5,
-    width: '90%',
-    height: '90%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: 16,
     marginBottom: 15,
-    textAlign: 'center',
+    borderRadius: 16,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
   },
-  searchInput: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    backgroundColor: '#fff',
+  busHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  busNumberText: { fontSize: 22, fontWeight: '800', color: '#1A1A1A', marginLeft: 8 },
+  timeInfoContainer: { flexDirection: 'row', backgroundColor: '#F8F9FA', borderRadius: 10, padding: 15, marginBottom: 15 },
+  timeBlock: { flex: 1, alignItems: 'center' },
+  timeLabel: { fontSize: 12, color: '#666', marginBottom: 4 },
+  timeValue: { fontSize: 18, fontWeight: '700', color: '#333' },
+  timeDivider: { width: 1, backgroundColor: '#DDD', marginHorizontal: 10 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  actionButton: {
+    flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    paddingVertical: 12, borderWidth: 1, borderColor: '#EEE', borderRadius: 10, marginHorizontal: 5
   },
-  favoriteRoutesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap', // flexWrap을 추가하여 줄바꿈이 되도록 설정
-    justifyContent: 'space-around',
-    marginBottom: 20,
+  actionButtonText: { marginLeft: 5, fontSize: 14, fontWeight: '600', color: '#555' },
+
+  // Modal 디자인 개선
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: {
+    backgroundColor: '#fff', height: '80%', borderTopLeftRadius: 25, borderTopRightRadius: 25, paddingTop: 20,
   },
-  favoriteRouteButton: {
-    backgroundColor: '#d3d3d3',
-    padding: 10,
-    borderRadius: 5,
-    marginVertical: 5, // 버튼 간에 세로 간격 추가
-    width: '45%', // 버튼의 너비를 45%로 설정하여 두 줄로 배치
-  },
-  selectedFavoriteRouteButton: {
-    backgroundColor: '#09AA5C',
-  },
-  favoriteRouteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  selectedFavoriteRouteButtonText: {
-    color: '#fff',
-  },
-  head: {
-    height: 40,
-    backgroundColor: '#f1f1f1',
-  },
-  tableText: {
-    margin: 6,
-    textAlign: 'center',
-  },
-  resultText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginVertical: 10,
-    fontWeight:'bold',
-  },
-    text1: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginVertical: 10,
-    fontWeight:'bold',
-  },
-  pickercontainer:{
-    borderWidth: 2,
-    borderRadius: 11,
-    borderColor: '#ddd', // 테두리 색상을 회색에서 연한 회색으로 변경합니다.
-    overflow: 'hidden',
-    marginBottom: 10,
-    marginTop: 2,
-    paddingHorizontal: 10, // 양쪽에 여백을 추가합니다.
-  }
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: '#1A1A1A' },
+  routeItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+  routeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#008485', marginRight: 15 },
+  routeText: { fontSize: 16, color: '#333' },
+  tableHead: { height: 40, backgroundColor: '#F8F9FA' },
+  tableHeadText: { textAlign: 'center', fontWeight: 'bold', color: '#555' },
+  tableText: { textAlign: 'center', color: '#333' },
+  loadingBox: { paddingVertical: 40, alignItems: 'center' },
+  loadingText: { marginTop: 10, color: '#666' }
 });
 
 export default AirportBusInfo;

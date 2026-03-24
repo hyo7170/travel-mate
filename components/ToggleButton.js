@@ -1,49 +1,50 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import FlightDeparturesApi from '../api/FlightDeparturesApi'; // 출발편 API
-import FlightArrivalsApi from '../api/FlightArrivalApi'; // 도착편 API
-import { useLanguage } from '../components/LanguageContext'; // 언어 설정을 가져옵니다.
+import FlightDeparturesApi from '../api/FlightDeparturesApi';
+import FlightArrivalsApi from '../api/FlightArrivalApi';
+import { useLanguage } from '../components/LanguageContext';
 
 const ToggleButton = () => {
   const [isInternational, setIsInternational] = useState(true);
-  const { translate } = useLanguage(); // 언어 설정을 가져옵니다.
-
-  const handleDeparturesClick = () => {
-    setIsInternational(true);
-  };
-
-  const handleArrivalsClick = () => {
-    setIsInternational(false);
-  };
+  const { translate } = useLanguage();
 
   return (
     <View style={styles.container}>
-      <View style={styles.buttonContainer}>
+
+      {/* 토글 탭 */}
+      <View style={styles.tabWrapper}>
         <TouchableOpacity
           style={[
-            styles.button,
-            isInternational ? styles.activeButton : styles.inactiveButton,
+            styles.tabButton,
+            isInternational && styles.activeTab
           ]}
-          onPress={handleDeparturesClick}
+          onPress={() => setIsInternational(true)}
         >
-          <Text style={isInternational ? styles.activeButtonText : styles.inactiveButtonText}>
-            {translate('출발편')} 
-          </Text>              
+          <Text style={[
+            styles.tabText,
+            isInternational && styles.activeText
+          ]}>
+            ✈️ {translate('출발편')}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
-            styles.button,
-            !isInternational ? styles.activeButton : styles.inactiveButton,
+            styles.tabButton,
+            !isInternational && styles.activeTab
           ]}
-          onPress={handleArrivalsClick}
+          onPress={() => setIsInternational(false)}
         >
-          <Text style={!isInternational ? styles.activeButtonText : styles.inactiveButtonText}>
-            {translate('도착편')} 
+          <Text style={[
+            styles.tabText,
+            !isInternational && styles.activeText
+          ]}>
+            🛬 {translate('도착편')}
           </Text>
         </TouchableOpacity>
       </View>
 
+      {/* 데이터 영역 */}
       <View style={styles.dataContainer}>
         {isInternational ? <FlightDeparturesApi /> : <FlightArrivalsApi />}
       </View>
@@ -53,35 +54,53 @@ const ToggleButton = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'column',
-    marginRight: 10,
-    marginLeft: 10,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  button: {
     flex: 1,
+    paddingHorizontal: 15,
+    backgroundColor: '#F5F6F8',
+  },
+
+  tabWrapper: {
+    flexDirection: 'row',
+    backgroundColor: '#E9EDF2',
+    borderRadius: 30,
+    padding: 5,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 20, // 둥근 모서리
+    borderRadius: 25,
   },
-  activeButton: {
-    backgroundColor: '#09AA5C',
+
+  activeTab: {
+    backgroundColor: '#ffffff',
+
+    // iOS 그림자
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+
+    // Android 그림자
+    elevation: 3,
   },
-  inactiveButton: {
-    backgroundColor: '#D8D8D8',
+
+  tabText: {
+    fontSize: 15,
+    color: '#777',
+    fontWeight: '500',
   },
-  activeButtonText: {
-    color: 'white',
+
+  activeText: {
+    color: '#09AA5C',
+    fontWeight: '700',
   },
-  inactiveButtonText: {
-    color: 'black',
-  },
+
   dataContainer: {
-    // API 데이터를 표시할 위치를 조정할 수 있는 스타일을 추가하세요.
+    flex: 1,
   },
 });
 

@@ -12,31 +12,10 @@ import MainNavigator from './components/MainNavigator';
 import LoginScreen from './components/LoginScreen';
 import SettingsScreen from './screens/Settings'; 
 import WritePostScreen from './screens/WritePostScreen';
+import NicknameScreen from './screens/NicknameScreen'; // 🔥 닉네임 스크린 임포트 추가!
+import NotificationsScreen from './screens/NotificationsScreen'; // 🔥 1. 알림 스크린 임포트 추가! (파일 경로 확인 필요)
 
 const Stack = createNativeStackNavigator();
-
-// 로그인 완료 후의 메인 스택 레이아웃
-const RootStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen 
-        name="MainTabs" 
-        component={MainNavigator} 
-        options={{ headerShown: false }} 
-      />
-      <Stack.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
-        options={{ title: '설정' }} 
-      />
-      <Stack.Screen 
-        name="WritePostScreen" 
-        component={WritePostScreen} 
-        options={{ headerShown: false }} 
-      />
-    </Stack.Navigator>
-  );
-};
 
 const App = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
@@ -49,60 +28,43 @@ const App = () => {
         const firstLaunch = await AsyncStorage.getItem('isFirstLaunch');
         const loginState = await AsyncStorage.getItem('isLoggedIn');
         
-        // 처음 실행 여부 판단 (값이 없으면 true)
         setIsFirstLaunch(firstLaunch === null);
-        // 로그인 상태 판단
         setIsLoggedIn(loginState === 'true');
       } catch (error) {
         console.error("초기 설정 로드 실패:", error);
       } finally {
-        // 로딩 화면을 약간 보여주어 부드러운 전환 유도
         setTimeout(() => setIsLoading(false), 1500);
       }
     };
     initApp();
   }, []);
 
-  // 1. 언어 선택 완료 시 호출 (첫 방문 -> 로그인 화면으로)
+  // 1. 언어 선택 완료 시
   const handleLanguageSelected = async () => {
     try {
       await AsyncStorage.setItem('isFirstLaunch', 'false');
-      setIsFirstLaunch(false); // 🔥 상태 업데이트로 화면 전환 유도
+      setIsFirstLaunch(false); 
     } catch (e) {
       console.error(e);
     }
   };
 
-  // 2. 로그인 완료 시 호출 (로그인 화면 -> 메인 화면으로)
-  const handleGuestLogin = async () => {
+  // 2. 로그인 완료 시 (게스트 로그인 or 닉네임 설정 완료 시 호출)
+  const handleLoginComplete = async () => {
     try {
       await AsyncStorage.setItem('isLoggedIn', 'true');
-      setIsLoggedIn(true); // 🔥 상태 업데이트로 화면 전환 유도
+      setIsLoggedIn(true); 
     } catch (e) {
       console.error(e);
     }
   };
 
-  // 로딩 중일 때 보여줄 화면
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#4285F4" />
       </View>
     );
-  }
-
-  // 화면 결정 로직
-  let screen;
-  if (isFirstLaunch) {
-    // 1순위: 앱 설치 후 첫 실행 시 언어 선택
-    screen = <LanguageSelection onLanguageSelected={handleLanguageSelected} />;
-  } else if (!isLoggedIn) {
-    // 2순위: 언어 선택은 했으나 로그인이 안 된 경우
-    screen = <LoginScreen onGuest={handleGuestLogin} />;
-  } else {
-    // 3순위: 로그인 완료 후 메인 서비스
-    screen = <RootStack />; 
   }
 
   return (
@@ -110,7 +72,48 @@ const App = () => {
       <LanguageProvider>
         <NavigationContainer>
           <StatusBar barStyle="dark-content" />
-          {screen}
+          {/* 🔥 조건에 따라 Stack 화면들을 다르게 렌더링합니다 */}
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            
+            {isFirstLaunch ? (
+              // 1순위: 앱 첫 실행 시 언어 선택
+              <Stack.Screen name="Language">
+                {(props) => <LanguageSelection {...props} onLanguageSelected={handleLanguageSelected} />}
+              </Stack.Screen>
+
+            ) : !isLoggedIn ? (
+              // 2순위: 로그인이 안 된 상태 (Auth 플로우)
+              <>
+                <Stack.Screen name="Login">
+                  {/* onGuest로 handleLoginComplete를 넘겨 바로 메인으로 가게 함 */}
+                  {(props) => <LoginScreen {...props} onGuest={handleLoginComplete} />}
+                </Stack.Screen>
+                <Stack.Screen 
+                  name="Nickname" 
+                  options={{ headerShown: true, title: '프로필 설정' }}
+                >
+                  {/* 닉네임 설정 완료 시 handleLoginComplete 실행하여 메인으로 이동 */}
+                  {(props) => <NicknameScreen {...props} onComplete={handleLoginComplete} />}
+                </Stack.Screen>
+              </>
+
+            ) : (
+              // 3순위: 로그인 완료 후 (Main 플로우)
+              <>
+                <Stack.Screen name="MainTabs" component={MainNavigator} />
+                <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: '설정' }} />
+                <Stack.Screen name="WritePostScreen" component={WritePostScreen} />
+
+                 <Stack.Screen 
+                            name="Notifications" 
+                            component={NotificationsScreen} 
+                            options={{ headerShown: true, title: '알림' }} 
+                          />
+                        </>
+              
+            )}
+
+          </Stack.Navigator>
         </NavigationContainer>
       </LanguageProvider>
     </SafeAreaProvider>

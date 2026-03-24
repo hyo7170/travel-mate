@@ -8,7 +8,8 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Image
+  Image,
+  StatusBar // ✨ 상태 표시줄 높이를 계산하기 위해 추가됨
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -98,6 +99,8 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
+    // ✨ 안드로이드일 경우 기기의 상태 표시줄 높이만큼 위쪽 여백을 줌
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,

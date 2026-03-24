@@ -1,21 +1,31 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
-const LoginScreen = ({ onGuest }) => {
+const LoginScreen = ({ navigation, onGuest }) => {
+
+  const handleGoogleLogin = async () => {
+    // TODO: 구글 로그인 로직
+    const user = {
+      name: "Minhyo Byun" // 구글에서 받아온 이름
+    };
+
+    navigation.navigate("Nickname", {
+      googleName: user.name
+    });
+  };
+
   return (
     <View style={styles.container}>
-
       <Text style={styles.logo}>✈️ TravelEasy</Text>
       <Text style={styles.subtitle}>여행을 더 쉽고 빠르게</Text>
 
-      <TouchableOpacity style={styles.googleButton}>
+      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
         <Text style={styles.googleText}>Google로 시작하기</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.guestButton} onPress={onGuest}>
         <Text style={styles.guestText}>로그인 없이 구경하기</Text>
       </TouchableOpacity>
-
     </View>
   );
 };
